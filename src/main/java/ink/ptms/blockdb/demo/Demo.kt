@@ -1,13 +1,13 @@
 package ink.ptms.blockdb.demo
 
 import ink.ptms.adyeshach.api.AdyeshachAPI
+import ink.ptms.adyeshach.boot.Plugin
 import ink.ptms.adyeshach.common.entity.EntityTypes
+import ink.ptms.blockdb.BlockFactory.createDataContainer
+import ink.ptms.blockdb.BlockFactory.dataContainerMap
+import ink.ptms.blockdb.BlockFactory.getDataContainer
 import ink.ptms.blockdb.Data
-import ink.ptms.blockdb.createDataContainer
-import ink.ptms.blockdb.dataContainerMap
-import ink.ptms.blockdb.getDataContainer
 import io.izzel.taboolib.kotlin.Serializer
-import io.izzel.taboolib.loader.Plugin
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
