@@ -9,6 +9,7 @@ import io.izzel.taboolib.module.inject.TSchedule
 import io.izzel.taboolib.util.Files
 import io.izzel.taboolib.util.IO
 import org.bukkit.Bukkit
+import org.bukkit.Chunk
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
@@ -40,6 +41,51 @@ object BlockFactory : Listener {
 
     private val fallingBlocksMap = ConcurrentHashMap<UUID, DataContainer>()
     private val fallingBlocksCache = Local.get("TabooLib").get("cache/blockdb_0.yml")!!
+
+    val Chunk.dataContainerMap: Map<Vector, BlockDataContainer>
+        get() = getWorld(world.name).getRegionByChunk(x, z).getBlocksInChunk(x, z)
+
+    var Block.isAllowPistonMove: Boolean
+        set(it) {
+            val dataContainer = getDataContainer() ?: createDataContainer()
+            dataContainer[GeneralKey.PISTON_MOVE.key] = Data(it)
+        }
+        get() {
+            val dataContainer = getDataContainer()
+            return dataContainer == null || dataContainer[GeneralKey.PISTON_MOVE.key, Data(true)].toBoolean()
+        }
+
+    fun Block.createDataContainer(): BlockDataContainer {
+        return location.createDataContainer()
+    }
+
+    fun Block.getDataContainer(): BlockDataContainer? {
+        return location.getDataContainer()
+    }
+
+    fun Block.hasDataContainer(): Boolean {
+        return location.hasDataContainer()
+    }
+
+    fun Block.deleteDataContainer() {
+        location.deleteDataContainer()
+    }
+
+    fun Location.createDataContainer(): BlockDataContainer {
+        return getWorld(world.name).getRegionByBlock(blockX, blockZ).createBlock(blockX, blockY, blockZ)
+    }
+
+    fun Location.getDataContainer(): BlockDataContainer? {
+        return getWorld(world.name).getRegionByBlock(blockX, blockZ).getBlock(blockX, blockY, blockZ)
+    }
+
+    fun Location.hasDataContainer(): Boolean {
+        return getWorld(world.name).getRegionByBlock(blockX, blockZ).hasBlock(blockX, blockY, blockZ)
+    }
+
+    fun Location.deleteDataContainer() {
+        getWorld(world.name).getRegionByBlock(blockX, blockZ).delBlock(blockX, blockY, blockZ)
+    }
 
     fun getWorld(world: String): World {
         return worlds.computeIfAbsent(world) { World(world) }
