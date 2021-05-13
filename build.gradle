@@ -1,11 +1,12 @@
 plugins {
     id 'java'
+    id 'maven'
     id 'io.izzel.taboolib' version '1.3'
     id 'org.jetbrains.kotlin.jvm' version '1.4.0'
 }
 
-group = 'ink.ptms.blockdb'
-version = '1.0.0'
+group = 'ink.ptms'
+version = '1.0.2'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -22,25 +23,15 @@ repositories {
 }
 
 dependencies {
+    implementation 'ink.ptms:Adyeshach:1.2.0'
     implementation 'ink.ptms.core:v11604:11604:all'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
 }
 
 processResources {
-    // 是否在编译时打包源代码
     from(sourceSets.main.allSource) {
         exclude 'plugin.yml'
-    }
-    from(sourceSets.main.resources.srcDirs) {
-        include 'plugin.yml'
-        expand(
-                name: rootProject.name,
-                main: project.group + ".boot.PluginBoot",
-                version: project.version,
-                libVersion: taboolib.tabooLibVersion,
-                loaderVersion: taboolib.loaderVersion
-        )
     }
 }
 
@@ -54,4 +45,23 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: 'http://ptms.ink:8081/repository/maven-releases/') {
+                authentication(userName: user, password: password)
+            }
+            pom.artifactId = rootProject.name
+            pom.groupId = project.group
+            pom.version = project.version
+            pom.packaging = 'jar'
+        }
+    }
+}
+
+jar {
+    exclude 'ink/ptms/blockdb/demo/*'
+    exclude 'plugin.yml'
 }

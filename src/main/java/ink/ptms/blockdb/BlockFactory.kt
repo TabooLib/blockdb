@@ -7,6 +7,7 @@ import io.izzel.taboolib.module.inject.TFunction
 import io.izzel.taboolib.module.inject.TListener
 import io.izzel.taboolib.module.inject.TSchedule
 import io.izzel.taboolib.util.Files
+import io.izzel.taboolib.util.IO
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
@@ -15,6 +16,7 @@ import org.bukkit.entity.FallingBlock
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockPistonEvent
 import org.bukkit.event.block.BlockPistonExtendEvent
 import org.bukkit.event.block.BlockPistonRetractEvent
@@ -25,6 +27,9 @@ import java.io.*
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -68,14 +73,14 @@ object BlockFactory : Listener {
 
     @TFunction.Load
     private fun load() {
-        fallingBlocksCache.get("data")?.asMap()?.forEach {
-            fallingBlocksMap[UUID.fromString(it.key)] = DataContainer.fromJson(it.value.toString())
+        fallingBlocksCache.getKeys(false).forEach {
+            val uniqueId = UUID.fromString(it)
+            if (Bukkit.getEntity(uniqueId) != null) {
+                fallingBlocksMap[uniqueId] = DataContainer.fromJson(fallingBlocksCache[it].toString())
+            } else {
+                fallingBlocksCache.set(it, null)
+            }
         }
-    }
-
-    @TFunction.Cancel
-    private fun unload() {
-        fallingBlocksCache.set("data", fallingBlocksMap.map { it.key.toString() to it.value.toJson() })
     }
 
     @TSchedule(period = 6000, async = true)
@@ -106,18 +111,25 @@ object BlockFactory : Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    private fun e(e: BlockBreakEvent) {
+        e.block.deleteDataContainer()
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: EntityChangeBlockEvent) {
         if (e.entity is FallingBlock) {
             if (e.to == Material.AIR) {
                 val dataContainer = e.block.getDataContainer()
                 if (dataContainer != null) {
-                    fallingBlocksMap[e.entity.uniqueId] = dataContainer
                     e.block.deleteDataContainer()
+                    fallingBlocksMap[e.entity.uniqueId] = dataContainer
+                    fallingBlocksCache.set(e.entity.uniqueId.toString(), dataContainer.toJson())
                 }
             } else {
                 val dataContainer = fallingBlocksMap.remove(e.entity.uniqueId)
                 if (dataContainer != null) {
                     e.block.createDataContainer().merge(dataContainer)
+                    fallingBlocksCache.set(e.entity.uniqueId.toString(), null)
                 }
             }
         }
@@ -191,25 +203,28 @@ object BlockFactory : Listener {
                 }
                 val file = File("$name/blockdata/b.${regionX},${regionZ}.bdb")
                 if (file.exists()) {
-                    ByteArrayInputStream(file.readBytes()).use { byteArrayInputStream ->
-                        ObjectInputStream(byteArrayInputStream).use { objectInputStream ->
-                            val map = HashMap<Long, BlockDataContainer>()
-                            while (true) {
-                                try {
-                                    val key = objectInputStream.readLong()
-                                    val loc = fromLocationKey(key)
-                                    map[key] = BlockDataContainer(name, loc.blockX, loc.blockY, loc.blockZ).also {
-                                        it.merge(DataContainer.fromJson(objectInputStream.readUTF()))
+                    ZipFile(file).use { zipFile ->
+                        ByteArrayInputStream(IO.readFully(zipFile.getInputStream(zipFile.getEntry("data")))).use { byteArrayInputStream ->
+                            ObjectInputStream(byteArrayInputStream).use { objectInputStream ->
+                                val map = HashMap<Long, BlockDataContainer>()
+                                while (true) {
+                                    try {
+                                        val key = objectInputStream.readLong()
+                                        val loc = fromLocationKey(key)
+                                        map[key] = BlockDataContainer(name, loc.blockX, loc.blockY, loc.blockZ).also {
+                                            it.merge(DataContainer.fromJson(objectInputStream.readUTF()))
+                                        }
+                                    } catch (ex: Exception) {
+                                        break
                                     }
-                                } catch (ex: Exception) {
-                                    break
                                 }
-                            }
-                            return WorldRegion(this, regionX, regionZ, map).also {
-                                regions[regionKey] = it
+                                return WorldRegion(this, regionX, regionZ, map).also {
+                                    regions[regionKey] = it
+                                }
                             }
                         }
                     }
+
                 }
                 return null
             }
@@ -223,7 +238,18 @@ object BlockFactory : Listener {
                 if (region.blocks.isEmpty()) {
                     File("$name/blockdata/b.${regionX},${regionZ}.bdb").delete()
                 } else {
-                    Files.file("$name/blockdata/b.${regionX},${regionZ}.bdb").writeBytes(byteArray)
+                    try {
+                        FileOutputStream(Files.file("$name/blockdata/b.${regionX},${regionZ}.bdb")).use { fileOutputStream ->
+                            ZipOutputStream(fileOutputStream).use { zipOutputStream ->
+                                zipOutputStream.putNextEntry(ZipEntry("data"))
+                                zipOutputStream.write(byteArray)
+                                zipOutputStream.flush()
+                                zipOutputStream.closeEntry()
+                            }
+                        }
+                    } catch (t: Throwable) {
+                        t.printStackTrace()
+                    }
                 }
             }
             if (unload) {
