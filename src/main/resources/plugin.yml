@@ -3,13 +3,13 @@
 #         Powered by TabooLib 5.0         #
 
 
-name: ${name}
-main: ${main}
-version: ${version}
+name: 'blockdb'
+main: 'ink.ptms.boot.PluginBoot'
+version: 'demo'
 authors: ['坏黑']
 
 api-version: 1.13
 
 lib-download: true
-lib-version: ${libVersion}
-loader-version: ${loaderVersion}
+lib-version: '5.66'
+loader-version: '1.2'

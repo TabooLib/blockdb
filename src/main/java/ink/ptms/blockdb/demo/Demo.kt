@@ -50,7 +50,7 @@ class Demo : Plugin(), Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun e(e: BlockPlaceEvent) {
         if (!e.itemInHand.isSimilar(ItemStack(e.itemInHand.type))) {
             val dataContainer = e.blockPlaced.getDataContainer() ?: e.blockPlaced.createDataContainer()
@@ -60,13 +60,12 @@ class Demo : Plugin(), Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     fun e(e: BlockBreakEvent) {
         val dataContainer = e.block.getDataContainer() ?: return
         if (dataContainer.containsKey("demo.item")) {
             e.isDropItems = false
             e.block.world.dropItem(e.block.location.add(0.5, 0.5, 0.5), Serializer.toItemStack(dataContainer["demo.item"]!!.toString()))
-            dataContainer.remove("demo.item")
         }
     }
 }

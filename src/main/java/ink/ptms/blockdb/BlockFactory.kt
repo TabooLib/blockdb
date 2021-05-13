@@ -1,5 +1,6 @@
 package ink.ptms.blockdb
 
+import com.destroystokyo.paper.event.block.BlockDestroyEvent
 import io.izzel.taboolib.kotlin.Tasks
 import io.izzel.taboolib.kotlin.asMap
 import io.izzel.taboolib.module.db.local.Local
@@ -14,14 +15,13 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.FallingBlock
+import org.bukkit.event.Cancellable
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
-import org.bukkit.event.block.BlockBreakEvent
-import org.bukkit.event.block.BlockPistonEvent
-import org.bukkit.event.block.BlockPistonExtendEvent
-import org.bukkit.event.block.BlockPistonRetractEvent
+import org.bukkit.event.block.*
 import org.bukkit.event.entity.EntityChangeBlockEvent
+import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.world.ChunkLoadEvent
 import org.bukkit.util.Vector
 import java.io.*
@@ -38,9 +38,6 @@ import kotlin.collections.HashMap
 object BlockFactory : Listener {
 
     val worlds = ConcurrentHashMap<String, World>()
-
-    private val fallingBlocksMap = ConcurrentHashMap<UUID, DataContainer>()
-    private val fallingBlocksCache = Local.get("TabooLib").get("cache/blockdb_0.yml")!!
 
     val Chunk.dataContainerMap: Map<Vector, BlockDataContainer>
         get() = getWorld(world.name).getRegionByChunk(x, z).getBlocksInChunk(x, z)
@@ -87,6 +84,20 @@ object BlockFactory : Listener {
         getWorld(world.name).getRegionByBlock(blockX, blockZ).delBlock(blockX, blockY, blockZ)
     }
 
+    fun Location.getNearbyDataContainers(range: Double): Map<Vector, BlockDataContainer> {
+        val map = HashMap<Vector, BlockDataContainer>()
+        val world = getWorld(world.name)
+        world.regions.forEach { (_, region) ->
+            region.blocks.forEach { (_, block) ->
+                val vector = Vector(block.blockX, block.blockY, block.blockZ)
+                if (vector.distance(toVector()) < range) {
+                    map[vector] = block
+                }
+            }
+        }
+        return map
+    }
+
     fun getWorld(world: String): World {
         return worlds.computeIfAbsent(world) { World(world) }
     }
@@ -117,18 +128,6 @@ object BlockFactory : Listener {
 
     private fun Int.roundToRegion() = this shr 5
 
-    @TFunction.Load
-    private fun load() {
-        fallingBlocksCache.getKeys(false).forEach {
-            val uniqueId = UUID.fromString(it)
-            if (Bukkit.getEntity(uniqueId) != null) {
-                fallingBlocksMap[uniqueId] = DataContainer.fromJson(fallingBlocksCache[it].toString())
-            } else {
-                fallingBlocksCache.set(it, null)
-            }
-        }
-    }
-
     @TSchedule(period = 6000, async = true)
     @TFunction.Cancel
     private fun save() {
@@ -153,57 +152,6 @@ object BlockFactory : Listener {
     private fun e(e: ChunkLoadEvent) {
         Tasks.task(true) {
             getWorld(e.chunk.world.name).getRegion((e.chunk.x * 16) shr 5, (e.chunk.z * 16) shr 5)
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: BlockBreakEvent) {
-        e.block.deleteDataContainer()
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: EntityChangeBlockEvent) {
-        if (e.entity is FallingBlock) {
-            if (e.to == Material.AIR) {
-                val dataContainer = e.block.getDataContainer()
-                if (dataContainer != null) {
-                    e.block.deleteDataContainer()
-                    fallingBlocksMap[e.entity.uniqueId] = dataContainer
-                    fallingBlocksCache.set(e.entity.uniqueId.toString(), dataContainer.toJson())
-                }
-            } else {
-                val dataContainer = fallingBlocksMap.remove(e.entity.uniqueId)
-                if (dataContainer != null) {
-                    e.block.createDataContainer().merge(dataContainer)
-                    fallingBlocksCache.set(e.entity.uniqueId.toString(), null)
-                }
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: BlockPistonExtendEvent) {
-        e.check(e.blocks)
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: BlockPistonRetractEvent) {
-        e.check(e.blocks)
-    }
-
-    private fun BlockPistonEvent.check(blocks: List<Block>) {
-        if (blocks.all { it.isAllowPistonMove }) {
-            val loc = ArrayList<Pair<Location, BlockDataContainer>>()
-            blocks.forEach { block ->
-                val dataContainer = block.getDataContainer()
-                if (dataContainer != null) {
-                    loc.add(block.getRelative(direction).location to dataContainer)
-                    block.deleteDataContainer()
-                }
-            }
-            loc.forEach { it.first.createDataContainer().merge(it.second) }
-        } else {
-            isCancelled = true
         }
     }
 
@@ -319,12 +267,12 @@ object BlockFactory : Listener {
         }
 
         fun getBlocksInChunk(chunkX: Int, chunkZ: Int): Map<Vector, BlockDataContainer> {
-            val x = (chunkX * 16)..(chunkX * 16 + 16)
-            val z = (chunkZ * 16)..(chunkZ * 16 + 16)
+            val x = chunkX * 16 to chunkX * 16 + 16
+            val z = chunkZ * 16 to chunkZ * 16 + 16
             val chunk = HashMap<Vector, BlockDataContainer>()
             blocks.forEach {
                 val pos = fromLocationKey(it.key)
-                if (pos.blockX in x && pos.blockZ in z) {
+                if (pos.blockX >= x.first && pos.blockX < x.second && pos.blockZ > z.first && pos.blockZ < z.second) {
                     chunk[pos] = it.value
                 }
             }

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'ink.ptms'
-version = '1.0.3'
+version = '1.0.4'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -23,6 +23,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.sk89q.worldedit:WorldEdit:7:all'
     implementation 'ink.ptms:Adyeshach:1.2.0'
     implementation 'ink.ptms.core:v11604:11604:all'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
