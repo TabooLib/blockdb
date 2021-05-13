@@ -13,7 +13,7 @@ import org.bukkit.event.Event
  */
 class BlockDataDeleteEvent(val location: Location, val reason: Reason, val bukkitEvent: Event) : EventCancellable<BlockDataDeleteEvent>(true) {
 
-    enum class Reason {
+    enum class Reason(val isTransferred: Boolean = false) {
 
         PHYSICAL,
         BREAK,
@@ -28,8 +28,8 @@ class BlockDataDeleteEvent(val location: Location, val reason: Reason, val bukki
         SILVERFISH,
         WITHER,
         ENDER_DRAGON,
-        FALLING_BLOCK,
-        ENDERMAN,
+        FALLING_BLOCK(true),
+        ENDERMAN(true),
         PISTON
 
     }

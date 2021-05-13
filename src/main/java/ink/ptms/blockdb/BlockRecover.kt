@@ -68,7 +68,7 @@ class BlockRecover : Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockPhysicsEvent) {
-        if (e.sourceBlock.type.isAir && e.changedType.isAir) {
+        if (e.sourceBlock.type.isLegacyAir() && e.changedType.isLegacyAir()) {
             e.block.deleteDataContainer()
         }
     }
@@ -152,7 +152,7 @@ class BlockRecover : Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: EntityChangeBlockEvent) {
-        if ((e.entity is Zombie || e.entity is Silverfish || e.entity is Wither || e.entity is EnderDragon) && e.to.isAir) {
+        if ((e.entity is Zombie || e.entity is Silverfish || e.entity is Wither || e.entity is EnderDragon) && e.to.isLegacyAir()) {
             e.block.delete(
                 e, when (e.entity) {
                     is Zombie -> BlockDataDeleteEvent.Reason.ZOMBIE_BREAK_DOOR
@@ -164,7 +164,7 @@ class BlockRecover : Listener {
             )
         }
         if (e.entity is FallingBlock || e.entity is Enderman) {
-            if (e.to.isAir) {
+            if (e.to.isLegacyAir()) {
                 val reason = when (e.entity) {
                     is FallingBlock -> BlockDataDeleteEvent.Reason.FALLING_BLOCK
                     is Enderman -> BlockDataDeleteEvent.Reason.ENDERMAN
@@ -242,5 +242,9 @@ class BlockRecover : Listener {
         } else {
             true
         }
+    }
+
+    private fun Material.isLegacyAir(): Boolean {
+        return if (Version.isAfter(Version.v1_13)) isAir else this == Material.AIR
     }
 }
