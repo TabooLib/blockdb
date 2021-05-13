@@ -3,6 +3,7 @@ package ink.ptms.blockdb
 import com.destroystokyo.paper.event.block.BlockDestroyEvent
 import io.izzel.taboolib.kotlin.Tasks
 import io.izzel.taboolib.kotlin.asMap
+import io.izzel.taboolib.kotlin.warning
 import io.izzel.taboolib.module.db.local.Local
 import io.izzel.taboolib.module.inject.TFunction
 import io.izzel.taboolib.module.inject.TListener
@@ -23,6 +24,7 @@ import org.bukkit.event.block.*
 import org.bukkit.event.entity.EntityChangeBlockEvent
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.world.ChunkLoadEvent
+import org.bukkit.event.world.WorldSaveEvent
 import org.bukkit.util.Vector
 import java.io.*
 import java.util.*
@@ -128,13 +130,13 @@ object BlockFactory : Listener {
 
     private fun Int.roundToRegion() = this shr 5
 
-    @TSchedule(period = 6000, async = true)
+    @TSchedule(period = 3000, async = true)
     @TFunction.Cancel
     private fun save() {
         worlds.forEach { (_, world) -> world.save() }
     }
 
-    @TSchedule(period = 1200, async = true)
+    @TSchedule(period = 1000, async = true)
     private fun check() {
         worlds.forEach { (_, world) -> world.regions.forEach { (_, region) -> region.blocks.values.removeIf { it.isEmpty() } } }
     }
@@ -153,6 +155,11 @@ object BlockFactory : Listener {
         Tasks.task(true) {
             getWorld(e.chunk.world.name).getRegion((e.chunk.x * 16) shr 5, (e.chunk.z * 16) shr 5)
         }
+    }
+
+    @EventHandler
+    private fun e(e: WorldSaveEvent) {
+        save()
     }
 
     data class World(val name: String) {
