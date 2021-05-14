@@ -9,6 +9,7 @@ import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldedit.util.eventbus.Subscribe
 import com.sk89q.worldedit.world.block.BlockStateHolder
 import io.izzel.taboolib.module.inject.TListener
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.event.Listener
 
@@ -20,12 +21,7 @@ import org.bukkit.event.Listener
  * @author sky
  * @since 2021/5/13 6:10 下午
  */
-@TListener(depend = ["WorldEdit"])
-class BlockRecoverWorldEdit : Listener {
-
-    init {
-        WorldEdit.getInstance().eventBus.register(this)
-    }
+class BlockRecoverWorldEdit {
 
     @Subscribe
     fun e(e: EditSessionEvent) {
@@ -35,6 +31,16 @@ class BlockRecoverWorldEdit : Listener {
             override fun <T : BlockStateHolder<T>> setBlock(pos: BlockVector3, block: T): Boolean {
                 BlockFactory.getWorld(e.world!!.name).getRegionByBlock(pos.x, pos.z).delBlock(pos.x, pos.y, pos.z)
                 return extent.setBlock(pos, block)
+            }
+        }
+    }
+
+    companion object {
+
+        @TFunction.Init
+        fun init() {
+            if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
+                WorldEdit.getInstance().eventBus.register(BlockRecoverWorldEdit())
             }
         }
     }

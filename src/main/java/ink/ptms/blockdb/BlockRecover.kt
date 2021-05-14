@@ -68,7 +68,7 @@ class BlockRecover : Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockPhysicsEvent) {
-        if (e.sourceBlock.type.isLegacyAir() && e.changedType.isLegacyAir()) {
+        if (e.changedType.isLegacyAir() && (Version.isBefore(Version.v1_13) || e.sourceBlock.type.isLegacyAir())) {
             e.block.deleteDataContainer()
         }
     }
