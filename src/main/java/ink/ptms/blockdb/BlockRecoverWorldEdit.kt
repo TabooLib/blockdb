@@ -1,6 +1,7 @@
 package ink.ptms.blockdb
 
 import com.sk89q.worldedit.WorldEdit
+import com.sk89q.worldedit.bukkit.WorldEditPlugin
 import io.izzel.taboolib.module.inject.TFunction
 
 import com.sk89q.worldedit.event.extent.EditSessionEvent
@@ -40,7 +41,10 @@ class BlockRecoverWorldEdit {
         @TFunction.Init
         fun init() {
             if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
-                WorldEdit.getInstance().eventBus.register(BlockRecoverWorldEdit())
+                try {
+                    WorldEdit.getInstance().eventBus.register(BlockRecoverWorldEdit())
+                } catch (ex: NoClassDefFoundError) {
+                }
             }
         }
     }
