@@ -157,10 +157,10 @@ object BlockFactory : Listener {
         }
     }
 
-    @EventHandler
-    private fun e(e: WorldSaveEvent) {
-        save()
-    }
+//    @EventHandler
+//    private fun e(e: WorldSaveEvent) {
+//        save()
+//    }
 
     data class World(val name: String) {
 
