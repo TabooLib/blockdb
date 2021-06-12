@@ -245,6 +245,6 @@ class BlockRecover : Listener {
     }
 
     private fun Material.isLegacyAir(): Boolean {
-        return if (Version.isAfter(Version.v1_13)) isAir else this == Material.AIR
+        return if (Version.isAfter(Version.v1_15)) isAir else this == Material.AIR
     }
 }
