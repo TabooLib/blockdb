@@ -1,7 +1,5 @@
 package ink.ptms.blockdb
 
-import org.bukkit.block.Block
-
 /**
  * blockdb
  * ink.ptms.blockdb.BlockDataContainer

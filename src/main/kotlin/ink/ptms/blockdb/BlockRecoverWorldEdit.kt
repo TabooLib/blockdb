@@ -1,19 +1,14 @@
 package ink.ptms.blockdb
 
 import com.sk89q.worldedit.WorldEdit
-import com.sk89q.worldedit.bukkit.WorldEditPlugin
-import io.izzel.taboolib.module.inject.TFunction
-
 import com.sk89q.worldedit.event.extent.EditSessionEvent
 import com.sk89q.worldedit.extent.AbstractDelegateExtent
 import com.sk89q.worldedit.math.BlockVector3
 import com.sk89q.worldedit.util.eventbus.Subscribe
 import com.sk89q.worldedit.world.block.BlockStateHolder
-import io.izzel.taboolib.module.inject.TListener
 import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.event.Listener
-
+import taboolib.common.LifeCycle
+import taboolib.common.platform.Awake
 
 /**
  * blockdb
@@ -38,7 +33,7 @@ class BlockRecoverWorldEdit {
 
     companion object {
 
-        @TFunction.Init
+        @Awake(LifeCycle.INIT)
         fun init() {
             if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
                 try {

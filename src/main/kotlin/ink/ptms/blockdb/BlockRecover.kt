@@ -6,28 +6,26 @@ import ink.ptms.blockdb.BlockFactory.getDataContainer
 import ink.ptms.blockdb.BlockFactory.hasDataContainer
 import ink.ptms.blockdb.BlockFactory.isAllowPistonMove
 import ink.ptms.blockdb.event.BlockDataDeleteEvent
-import io.izzel.taboolib.Version
-import io.izzel.taboolib.kotlin.Tasks
-import io.izzel.taboolib.module.db.local.Local
-import io.izzel.taboolib.module.inject.TFunction
-import io.izzel.taboolib.module.inject.TListener
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.block.data.Waterlogged
-import org.bukkit.block.data.type.Cake
 import org.bukkit.entity.*
-import org.bukkit.event.*
+import org.bukkit.event.Cancellable
+import org.bukkit.event.Event
 import org.bukkit.event.block.*
-import org.bukkit.event.entity.EntityBreakDoorEvent
 import org.bukkit.event.entity.EntityChangeBlockEvent
-import org.bukkit.event.entity.EntityDropItemEvent
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import taboolib.common.LifeCycle
+import taboolib.common.platform.Awake
+import taboolib.common.platform.event.EventPriority
+import taboolib.common.platform.event.SubscribeEvent
+import taboolib.module.configuration.createLocal
+import taboolib.module.nms.MinecraftVersion
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.collections.ArrayList
 
 /**
  * blockdb
@@ -36,14 +34,13 @@ import kotlin.collections.ArrayList
  * @author sky
  * @since 2021/5/13 5:59 下午
  */
-@TListener
-class BlockRecover : Listener {
+class BlockRecover {
 
     private val fallingBlocksMap = ConcurrentHashMap<UUID, DataContainer>()
-    private val fallingBlocksCache = Local.get("TabooLib").get("cache/blockdb_0.yml")!!
+    private val fallingBlocksCache = createLocal("cache.yml")
 
-    @TFunction.Init
-    private fun load() {
+    @Awake(LifeCycle.INIT)
+    internal fun init() {
         fallingBlocksCache.getKeys(false).forEach {
             val uniqueId = UUID.fromString(it)
             if (Bukkit.getEntity(uniqueId) != null) {
@@ -58,17 +55,17 @@ class BlockRecover : Listener {
      * 玩家破坏方块
      * 生存、创造模式均有效
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: BlockBreakEvent) {
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    internal fun e(e: BlockBreakEvent) {
         e.block.delete(e, BlockDataDeleteEvent.Reason.BREAK)
     }
 
     /**
      * 物理事件
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    private fun e(e: BlockPhysicsEvent) {
-        if (e.changedType.isLegacyAir() && (Version.isBefore(Version.v1_13) || e.sourceBlock.type.isLegacyAir())) {
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    internal fun e(e: BlockPhysicsEvent) {
+        if (e.changedType.isLegacyAir() && (MinecraftVersion.majorLegacy < 11300 || e.sourceBlock.type.isLegacyAir())) {
             e.block.deleteDataContainer()
         }
     }
@@ -76,7 +73,7 @@ class BlockRecover : Listener {
     /**
      * 方块火焰被烧毁
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockBurnEvent) {
         e.block.delete(e, BlockDataDeleteEvent.Reason.BURN)
     }
@@ -85,7 +82,7 @@ class BlockRecover : Listener {
      * 方块自然消退
      * 冰、雪融化
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockFadeEvent) {
         e.block.delete(e, BlockDataDeleteEvent.Reason.FADE)
     }
@@ -93,7 +90,7 @@ class BlockRecover : Listener {
     /**
      * 树叶自然消退
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: LeavesDecayEvent) {
         e.block.delete(e, BlockDataDeleteEvent.Reason.LEAVES_DECAY)
     }
@@ -102,7 +99,7 @@ class BlockRecover : Listener {
      * 方块爆炸破坏方块
      * TNT、床
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockExplodeEvent) {
         e.blockList().toList().forEach {
             it.delete(e, BlockDataDeleteEvent.Reason.BLOCK_EXPLODE) {
@@ -115,7 +112,7 @@ class BlockRecover : Listener {
      * 实体爆炸破坏方块
      * 爬行者、魔影水晶
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: EntityExplodeEvent) {
         e.blockList().toList().forEach {
             it.delete(e, BlockDataDeleteEvent.Reason.ENTITY_EXPLODE) {
@@ -127,9 +124,9 @@ class BlockRecover : Listener {
     /**
      * 液体流动
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockFromToEvent) {
-        if (!Version.isAfter(Version.v1_13) || e.toBlock.blockData !is Waterlogged) {
+        if (MinecraftVersion.majorLegacy < 11300 || e.toBlock.blockData !is Waterlogged) {
             e.toBlock.delete(e, BlockDataDeleteEvent.Reason.LIQUID)
         }
     }
@@ -137,7 +134,7 @@ class BlockRecover : Listener {
     /**
      * 玩家吃蛋糕
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: PlayerInteractEvent) {
         if (e.action == Action.RIGHT_CLICK_BLOCK && e.clickedBlock?.type == Material.CAKE && e.clickedBlock!!.data.toInt() == 5) {
             e.clickedBlock!!.delete(e, BlockDataDeleteEvent.Reason.CAKE)
@@ -150,7 +147,7 @@ class BlockRecover : Listener {
      * 蠹虫破坏方块（直接销毁数据）
      * 方块坠落（数据转移）
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: EntityChangeBlockEvent) {
         if ((e.entity is Zombie || e.entity is Silverfish || e.entity is Wither || e.entity is EnderDragon) && e.to.isLegacyAir()) {
             e.block.delete(
@@ -191,7 +188,7 @@ class BlockRecover : Listener {
     /**
      * 活塞推出方块
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockPistonExtendEvent) {
         e.check(e.blocks)
     }
@@ -199,7 +196,7 @@ class BlockRecover : Listener {
     /**
      * 胡塞收回方块
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockPistonRetractEvent) {
         e.check(e.blocks)
     }
@@ -226,7 +223,7 @@ class BlockRecover : Listener {
 
     private fun Block.delete(event: Event, reason: BlockDataDeleteEvent.Reason, delete: Boolean = true, cancel: (() -> Unit)? = null): Boolean {
         return if (location.hasDataContainer()) {
-            if (BlockDataDeleteEvent(location, reason, event).call().isCancelled) {
+            if (!BlockDataDeleteEvent(location, reason, event).call()) {
                 if (cancel == null) {
                     (event as? Cancellable)?.isCancelled = true
                 } else {
@@ -245,6 +242,6 @@ class BlockRecover : Listener {
     }
 
     private fun Material.isLegacyAir(): Boolean {
-        return if (Version.isAfter(Version.v1_15)) isAir else this == Material.AIR
+        return if (MinecraftVersion.majorLegacy >= 11500) isAir else this == Material.AIR
     }
 }

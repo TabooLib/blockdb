@@ -1,6 +1,7 @@
 package ink.ptms.blockdb
 
-import io.izzel.taboolib.util.Coerce
+import taboolib.common.util.asList
+import taboolib.common5.Coerce
 
 /**
  * Chemdah
@@ -13,6 +14,8 @@ open class Data {
 
     val data: Any
     var changed = false
+
+    protected var lazyCache: Any? = null
 
     constructor(value: Int) {
         this.data = value
@@ -42,29 +45,45 @@ open class Data {
         this.data = value
     }
 
-    constructor(value: String) {
-        this.data = value
-    }
-
     protected constructor(value: Any) {
         this.data = value
     }
 
-    fun toInt() = Coerce.toInteger(data)
+    fun toInt(): Int {
+        return Coerce.toInteger(data)
+    }
 
-    fun toFloat() = Coerce.toFloat(data)
+    fun toFloat(): Float {
+        return Coerce.toFloat(data)
+    }
 
-    fun toDouble() = Coerce.toDouble(data)
+    fun toDouble(): Double {
+        return Coerce.toDouble(data)
+    }
 
-    fun toLong() = Coerce.toLong(data)
+    fun toLong(): Long {
+        return Coerce.toLong(data)
+    }
 
-    fun toShort() = Coerce.toShort(data)
+    fun toShort(): Short {
+        return Coerce.toShort(data)
+    }
 
-    fun toByte() = Coerce.toByte(data)
+    fun toByte(): Byte {
+        return Coerce.toByte(data)
+    }
 
-    fun toBoolean() = Coerce.toBoolean(data)
+    fun toBoolean(): Boolean {
+        return Coerce.toBoolean(data)
+    }
 
-    override fun toString() = data.toString()
+    fun asList(): List<String> {
+        return data.asList()
+    }
+
+    override fun toString(): String {
+        return data.toString()
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

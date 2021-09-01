@@ -1,13 +1,14 @@
 package ink.ptms.blockdb
 
-import io.izzel.taboolib.internal.gson.JsonObject
-import io.izzel.taboolib.internal.gson.JsonParser
-import io.izzel.taboolib.internal.gson.JsonPrimitive
-import io.izzel.taboolib.kotlin.Reflex.Companion.reflex
-import io.izzel.taboolib.module.nms.nbt.NBTBase
-import io.izzel.taboolib.module.nms.nbt.NBTCompound
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import io.netty.util.internal.ConcurrentSet
+import taboolib.common.reflect.Reflex.Companion.getProperty
+import taboolib.common.reflect.Reflex.Companion.setProperty
 import java.util.concurrent.ConcurrentHashMap
+import java.util.function.Consumer
+import java.util.function.Function
 
 /**
  * Chemdah
@@ -35,9 +36,9 @@ open class DataContainer {
     /**
      * 函数内的所有数据修改行为不会记录变动（不更新数据库）
      */
-    fun unchanged(func: DataContainer.() -> Unit) {
+    fun unchanged(func: Consumer<DataContainer>) {
         locked = true
-        func(this)
+        func.accept(this)
         locked = false
     }
 
@@ -49,18 +50,22 @@ open class DataContainer {
     /**
      * 获取数据
      */
-    operator fun get(key: String) = map[key]
+    operator fun get(key: String): Data? {
+        return map[key]
+    }
 
     /**
      * 获取数据并返回默认值
      */
-    operator fun get(key: String, def: Data) = map[key] ?: def
+    operator fun get(key: String, def: Any): Data {
+        return map[key] ?: def.unsafeData()
+    }
 
     /**
      * 修改数据
      */
-    operator fun set(key: String, value: Data) {
-        map[key] = value.change()
+    operator fun set(key: String, value: Any) {
+        map[key] = if (value is Data) value.change() else value.unsafeData().change()
         if (!locked) {
             drops.remove(key)
         }
@@ -90,22 +95,32 @@ open class DataContainer {
      * 合并数据
      */
     fun merge(meta: DataContainer) {
-        map.putAll(meta.map)
+        meta.forEach { (key, data) -> this[key] = data.data }
     }
 
-    fun containsKey(key: String) = map.containsKey(key)
+    fun containsKey(key: String): Boolean {
+        return map.containsKey(key)
+    }
 
-    fun containsValue(value: Data) = map.containsValue(value)
+    fun containsValue(value: Any): Boolean {
+        return map.containsValue(value.unsafeData())
+    }
 
-    fun entries() = map.entries
+    fun entries(): MutableSet<MutableMap.MutableEntry<String, Data>> {
+        return map.entries
+    }
 
-    fun keys() = map.keys().toList()
+    fun keys(): List<String> {
+        return map.keys().toList()
+    }
 
-    fun copy() = DataContainer(map)
+    fun copy(): DataContainer {
+        return DataContainer(map)
+    }
 
-    fun isEmpty() = map.isEmpty()
-
-    fun isNotEmpty() = map.isNotEmpty()
+    fun isEmpty(): Boolean {
+        return map.isEmpty()
+    }
 
     /**
      * 释放变动
@@ -118,32 +133,26 @@ open class DataContainer {
         return this
     }
 
-    fun removeIf(predicate: (Pair<String, Data>) -> Boolean) {
+    fun removeIf(predicate: Function<Map.Entry<String, Data>, Boolean>) {
         map.entries.forEach {
-            if (predicate(it.toPair())) {
+            if (predicate.apply(it)) {
                 remove(it.key)
             }
         }
     }
 
-    fun forEach(consumer: (String, Data) -> (Unit)) {
-        map.forEach { consumer(it.key, it.value) }
+    fun forEach(consumer: Consumer<Map.Entry<String, Data>>) {
+        map.forEach { consumer.accept(it) }
     }
 
-    fun toMap(): Map<String, Data> {
-        return map.mapValues { it.value }
-    }
-
-    fun toNBT(): NBTCompound {
-        return NBTCompound().also {
-            map.forEach { (k, v) -> it[k] = NBTBase.toNBT(v.data) }
-        }
+    fun toMap(): Map<String, Any> {
+        return map.mapValues { it.value.data }
     }
 
     fun toJson() = JsonObject().also {
         map.forEach { (k, v) ->
             it.add(k, JsonPrimitive(0).also { json ->
-                json.reflex("value", v.data)
+                json.setProperty("value", v.data)
             })
         }
     }.toString()
@@ -172,16 +181,16 @@ open class DataContainer {
 
     companion object {
 
-        fun JsonObject.dataContainer(): DataContainer {
-            return DataContainer(entrySet().map { it.key to Data.unsafeData(it.value.asJsonPrimitive.reflex("value")!!) }.toMap())
+        fun Any.unsafeData(): Data {
+            return Data.unsafeData(this)
         }
 
-        fun NBTCompound.dataContainer(): DataContainer {
-            return DataContainer(map { it.key to Data.unsafeData(it.value.reflex("data")!!) }.toMap())
+        fun JsonObject.dataContainer(): DataContainer {
+            return DataContainer(entrySet().associate { it.key to it.value.asJsonPrimitive.getProperty<Any>("value")!!.unsafeData() })
         }
 
         fun fromJson(source: String): DataContainer {
-            return JsonParser.parseString(source).asJsonObject.dataContainer()
+            return JsonParser().parse(source).asJsonObject.dataContainer()
         }
     }
 }

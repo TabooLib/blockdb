@@ -4,13 +4,13 @@
 
 The GradleWrapper in included in this project.
 
-On Windows:
+**Windows:**
 
 ```
 gradlew.bat clean build
 ```
 
-On MacOS/Linux:
+**macOS/Linux:**
 
 ```
 ./gradlew clean build

@@ -1,8 +1,8 @@
 package ink.ptms.blockdb.event
 
-import io.izzel.taboolib.module.event.EventCancellable
 import org.bukkit.Location
 import org.bukkit.event.Event
+import taboolib.platform.type.BukkitProxyEvent
 
 /**
  * blockdb
@@ -11,7 +11,7 @@ import org.bukkit.event.Event
  * @author sky
  * @since 2021/5/13 8:30 下午
  */
-class BlockDataDeleteEvent(val location: Location, val reason: Reason, val bukkitEvent: Event) : EventCancellable<BlockDataDeleteEvent>(true) {
+class BlockDataDeleteEvent(val location: Location, val reason: Reason, val bukkitEvent: Event) : BukkitProxyEvent() {
 
     enum class Reason(val isTransferred: Boolean = false) {
 
@@ -31,6 +31,5 @@ class BlockDataDeleteEvent(val location: Location, val reason: Reason, val bukki
         FALLING_BLOCK(true),
         ENDERMAN(true),
         PISTON
-
     }
 }
