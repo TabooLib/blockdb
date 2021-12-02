@@ -30,12 +30,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * blockdb
- * ink.ptms.blockdb.BlockRecycle
+ * ink.ptms.blockdb.BlockRecover
  *
  * @author sky
  * @since 2021/5/13 5:59 下午
  */
-class BlockRecover {
+object BlockRecover {
 
     private val fallingBlocksMap = ConcurrentHashMap<UUID, DataContainer>()
     private val fallingBlocksCache = createLocal("cache.json", type = Type.FAST_JSON)
