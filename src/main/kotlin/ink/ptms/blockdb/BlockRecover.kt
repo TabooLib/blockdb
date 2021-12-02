@@ -22,6 +22,7 @@ import taboolib.common.LifeCycle
 import taboolib.common.platform.Awake
 import taboolib.common.platform.event.EventPriority
 import taboolib.common.platform.event.SubscribeEvent
+import taboolib.module.configuration.Type
 import taboolib.module.configuration.createLocal
 import taboolib.module.nms.MinecraftVersion
 import java.util.*
@@ -37,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap
 class BlockRecover {
 
     private val fallingBlocksMap = ConcurrentHashMap<UUID, DataContainer>()
-    private val fallingBlocksCache = createLocal("cache.yml")
+    private val fallingBlocksCache = createLocal("cache.json", type = Type.FAST_JSON)
 
     @Awake(LifeCycle.INIT)
     internal fun init() {
@@ -46,7 +47,7 @@ class BlockRecover {
             if (Bukkit.getEntity(uniqueId) != null) {
                 fallingBlocksMap[uniqueId] = DataContainer.fromJson(fallingBlocksCache[it].toString())
             } else {
-                fallingBlocksCache.set(it, null)
+                fallingBlocksCache[it] = null
             }
         }
     }
@@ -171,7 +172,7 @@ class BlockRecover {
                     val dataContainer = e.block.getDataContainer()
                     if (dataContainer != null) {
                         fallingBlocksMap[e.entity.uniqueId] = dataContainer
-                        fallingBlocksCache.set(e.entity.uniqueId.toString(), dataContainer.toJson())
+                        fallingBlocksCache[e.entity.uniqueId.toString()] = dataContainer.toJson()
                         e.block.deleteDataContainer()
                     }
                 }
@@ -179,7 +180,7 @@ class BlockRecover {
                 val dataContainer = fallingBlocksMap.remove(e.entity.uniqueId)
                 if (dataContainer != null) {
                     e.block.createDataContainer().merge(dataContainer)
-                    fallingBlocksCache.set(e.entity.uniqueId.toString(), null)
+                    fallingBlocksCache[e.entity.uniqueId.toString()] = null
                 }
             }
         }
