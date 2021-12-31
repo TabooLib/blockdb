@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("io.izzel.taboolib") version "1.31"
+    id("io.izzel.taboolib") version "1.33"
     id("org.jetbrains.kotlin.jvm") version "1.5.10"
 }
 
@@ -12,15 +12,16 @@ taboolib {
     install("module-configuration")
     install("platform-bukkit")
     classifier = null
-    version = "6.0.6-13"
+    version = "6.0.7-6"
 }
 
 repositories {
+    maven { url = uri("https://repo.tabooproject.org/storages/public/releases") }
     mavenCentral()
 }
 
 dependencies {
-    compileOnly("com.sk89q.worldedit:WorldEdit:7:all")
+    compileOnly("com.sk89q.worldedit:WorldEdit:7")
     compileOnly("ink.ptms.core:v11701:11701:mapped")
     compileOnly("ink.ptms.core:v11701:11701:universal")
     compileOnly(kotlin("stdlib"))
@@ -39,10 +40,10 @@ configure<JavaPluginConvention> {
 publishing {
     repositories {
         maven {
-            url = uri("https://repo2s.ptms.ink/repository/maven-releases/")
+            url = uri("https://repo.tabooproject.org/storages/public/releases")
             credentials {
-                username = project.findProperty("user").toString()
-                password = project.findProperty("password").toString()
+                username = project.findProperty("taboolibUsername").toString()
+                password = project.findProperty("taboolibPassword").toString()
             }
             authentication {
                 create<BasicAuthentication>("basic")
