@@ -12,7 +12,7 @@ taboolib {
     install("module-configuration")
     install("platform-bukkit")
     classifier = null
-    version = "6.0.7-50"
+    version = "6.0.7-62"
 }
 
 repositories {
