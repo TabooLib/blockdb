@@ -195,7 +195,7 @@ object BlockRecover {
     }
 
     /**
-     * 胡塞收回方块
+     * 活塞收回方块
      */
     @SubscribeEvent(priority = EventPriority.MONITOR, ignoreCancelled = true)
     private fun e(e: BlockPistonRetractEvent) {

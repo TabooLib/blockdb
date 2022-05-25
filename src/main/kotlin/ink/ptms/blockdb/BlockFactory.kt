@@ -66,7 +66,7 @@ object BlockFactory {
     }
 
     fun Location.deleteDataContainer() {
-        getWorld(world!!.name).getRegionByBlock(blockX, blockZ).delBlock(blockX, blockY, blockZ)
+        getWorld(world!!.name).getRegionByBlock(blockX, blockZ).deleteBlock(blockX, blockY, blockZ)
     }
 
     fun Location.getNearbyDataContainers(range: Double): Map<Vector, BlockDataContainer> {
@@ -150,7 +150,7 @@ object BlockFactory {
     data class World(val name: String) {
 
         val regions = ConcurrentHashMap<Long, WorldRegion>()
-        val lock = 0
+        val lock = Any()
 
         fun save() {
             regions.forEach { (_, region) ->
@@ -281,7 +281,7 @@ object BlockFactory {
             return blocks[locationKey(blockX, blockY, blockZ)]
         }
 
-        fun delBlock(blockX: Int, blockY: Int, blockZ: Int) {
+        fun deleteBlock(blockX: Int, blockY: Int, blockZ: Int) {
             blocks.remove(locationKey(blockX, blockY, blockZ))
         }
 

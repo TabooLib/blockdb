@@ -1,19 +1,2 @@
-# Building
-
-* [Gradle](https://gradle.org/) - Dependency Management
-
-The GradleWrapper in included in this project.
-
-**Windows:**
-
-```
-gradlew.bat clean build
-```
-
-**macOS/Linux:**
-
-```
-./gradlew clean build
-```
-
-Build artifacts should be found in `./build/libs` folder.
+# Blockdb
+> 有较大漏洞，推荐使用：https://github.dev/Redempt/RedLib

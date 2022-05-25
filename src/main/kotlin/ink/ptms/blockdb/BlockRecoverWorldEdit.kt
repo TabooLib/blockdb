@@ -25,7 +25,7 @@ class BlockRecoverWorldEdit {
         e.extent = object : AbstractDelegateExtent(e.extent) {
 
             override fun <T : BlockStateHolder<T>> setBlock(pos: BlockVector3, block: T): Boolean {
-                BlockFactory.getWorld(e.world!!.name).getRegionByBlock(pos.x, pos.z).delBlock(pos.x, pos.y, pos.z)
+                BlockFactory.getWorld(e.world!!.name).getRegionByBlock(pos.x, pos.z).deleteBlock(pos.x, pos.y, pos.z)
                 return extent.setBlock(pos, block)
             }
         }
@@ -38,7 +38,7 @@ class BlockRecoverWorldEdit {
             if (Bukkit.getPluginManager().getPlugin("WorldEdit") != null) {
                 try {
                     WorldEdit.getInstance().eventBus.register(BlockRecoverWorldEdit())
-                } catch (ex: NoClassDefFoundError) {
+                } catch (_: NoClassDefFoundError) {
                 }
             }
         }
